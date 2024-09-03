@@ -21,8 +21,28 @@ import java.util.Map;
 @Slf4j
 public class Main {
     public static void main(String[] args) {
+        if (args.length != 2) {
+            log.error("Error: Exactly two arguments are required.");
+            log.error("Usage: java net.vekn.Main <filename> <imagefolder>");
+            System.exit(1);
+        }
+
         String filename = args[0];
         String imagefolder = args[1];
+
+        // Validate that the filename is not empty
+        if (filename.trim().isEmpty()) {
+            log.error("Error: The filename argument cannot be empty.");
+            log.error("Usage: java net.vekn.Main <filename> <imagefolder>");
+            System.exit(1);
+        }
+
+        // Validate that the imagefolder is not empty
+        if (imagefolder.trim().isEmpty()) {
+            log.error("Error: The imagefolder argument cannot be empty.");
+            log.error("Usage: java net.vekn.Main <filename> <imagefolder>");
+            System.exit(1);
+        }
 
         log.info("Starting application with filename: {} and image folder: {}", filename, imagefolder);
 
