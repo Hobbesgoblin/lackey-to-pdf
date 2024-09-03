@@ -1,0 +1,49 @@
+# EditorConfig is awesome: https://editorconfig.org
+
+# Top-most EditorConfig file for a Java project with Gradle
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# 4 space indentation for Java source files
+[*.java]
+indent_style = space
+indent_size = 4
+
+# 2 space indentation for JSON files
+[*.json]
+indent_style = space
+indent_size = 2
+
+# 2 space indentation for Gradle and Groovy scripts
+[*.gradle]
+indent_style = space
+indent_size = 2
+
+[*.groovy]
+indent_style = space
+indent_size = 2
+
+# Tabs for Makefiles
+[Makefile]
+indent_style = tab
+
+# Specific configurations for Markdown files
+[*.md]
+trim_trailing_whitespace = false
+insert_final_newline = true
+
+# Specific configurations for YAML files
+[*.yml]
+indent_style = space
+indent_size = 2
+
+# Specific configurations for XML files (e.g., pom.xml, .gradle xml files)
+[*.xml]
+indent_style = space
+indent_size = 2
