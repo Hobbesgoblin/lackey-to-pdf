@@ -1,11 +1,11 @@
 plugins {
     id("java")
-    id("checkstyle")
-    id("com.github.spotbugs") version "6.0.21"
+    id("application")
+    id("com.github.johnrengelman.shadow") version "8.1.0"
 }
 
 group = "net.vekn"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
 val lombokVersion = "1.18.34"
 
@@ -34,4 +34,19 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+application {
+    mainClass.set("net.vekn.Main")
+}
+
+tasks.shadowJar {
+    archiveFileName.set("${project.name}-${project.version}-executable.jar")
+    manifest {
+        attributes["Main-Class"] = "net.vekn.Main"
+    }
+}
+
+tasks.build {
+    dependsOn(tasks.shadowJar)
 }
