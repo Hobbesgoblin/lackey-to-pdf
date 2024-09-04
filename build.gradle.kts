@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("application")
-    id("com.github.johnrengelman.shadow") version "8.1.0"
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 group = "net.vekn"
@@ -40,13 +40,14 @@ application {
     mainClass.set("net.vekn.Main")
 }
 
-tasks.shadowJar {
-    archiveFileName.set("${project.name}-${project.version}-bundled.jar")
-    manifest {
-        attributes["Main-Class"] = "net.vekn.Main"
+tasks {
+    shadowJar {
+        archiveFileName.set("${project.name}-${project.version}-bundled.jar")
+        manifest {
+            attributes["Main-Class"] = "net.vekn.Main"
+        }
     }
-}
-
-tasks.build {
-    dependsOn(tasks.shadowJar)
+    build {
+        dependsOn(shadowJar)
+    }
 }
