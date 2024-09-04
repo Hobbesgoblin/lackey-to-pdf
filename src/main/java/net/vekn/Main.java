@@ -54,6 +54,7 @@ public class Main {
         try {
             List<String> lines = Files.readAllLines(filePath);
             parseLibrarySection(lines, library);
+            processLibraryEntries(library, imagefolder);
             parseCryptSection(lines, crypt);
             processCryptEntries(crypt, imagefolder);
 
@@ -61,7 +62,7 @@ public class Main {
             imageFiles.addAll(getImageFiles(crypt, imagefolder).stream().sorted().toList());
             imageFiles.addAll(getImageFiles(library, imagefolder).stream().sorted().toList());
 
-            addImagesToPdf(imageFiles, new File("output.pdf"));
+            addImagesToPdf(imageFiles, new File(filename.substring(0, filename.length() - 4) + ".pdf"));
 
             log.info("PDF generation completed successfully.");
 
@@ -83,6 +84,8 @@ public class Main {
                 library.put(buildImageName(card[1]), Integer.parseInt(card[0]));
             } else {
                 log.info("Crypt section detected. Stopping library parsing.");
+                int libSize = library.values().stream().mapToInt(Integer::intValue).sum();
+                log.info("found {} different cards, totalling to {} cards", library.size(), libSize);
                 break;
             }
         }
@@ -101,23 +104,41 @@ public class Main {
         }
     }
 
+    private static void processLibraryEntries(Map<String, Integer> library, String imagefolder) {
+        for (Map.Entry<String, Integer> entry : library.entrySet()) {
+            String pathString = imagefolder + File.separator + entry.getKey() + ".jpg";
+            Path path = Paths.get(pathString);
+            log.debug("Checking path: {}", path);
+
+            if (Files.exists(path)) {
+                log.debug("Crypt found for card {}", entry.getKey());
+
+            } else {
+                log.error("No File found for library card {}!", entry.getKey());
+            }
+
+        }
+    }
+
     private static void processCryptEntries(Map<String, Integer> crypt, String imagefolder) {
         Map<String, Integer> updatedCrypt = new HashMap<>(crypt);
         log.debug("Processing {} crypt entries", crypt.size());
 
         for (Map.Entry<String, Integer> entry : crypt.entrySet()) {
-            String key = entry.getKey();
+            String cardName = entry.getKey();
             boolean multipleGroupsFound = false;
             boolean groupFound = false;
             int foundGroup = -1;
 
-            if (key.matches(".*g[1-7]$")) {
-                int group = Character.getNumericValue(key.charAt(key.length() - 1));
-                log.debug("Key already ends with group indicator: {}. Checking only group {}", key, group);
-                groupFound = checkGroup(imagefolder, key, group, true);
+            Path path = Paths.get(imagefolder + File.separator + cardName + ".jpg");
+            log.debug("Checking path: {}", path);
+            if (cardName.matches(".*g[1-7](adv)?$")) {
+                int group = Character.getNumericValue(cardName.charAt(cardName.length() - 1));
+                log.debug("Key already ends with group indicator: {}. Checking only group {}", cardName, group);
+                checkGroup(imagefolder, cardName, group, true);
             } else {
                 for (int group = 1; group <= 7; group++) {
-                    if (checkGroup(imagefolder, key, group, false)) {
+                    if (checkGroup(imagefolder, cardName, group, false)) {
                         if (groupFound) {
                             multipleGroupsFound = true;
                             break;
@@ -126,35 +147,51 @@ public class Main {
                         foundGroup = group;
                     }
                 }
+                handleGroupResults(updatedCrypt, cardName, multipleGroupsFound, groupFound, foundGroup, entry.getValue());
             }
 
-            handleGroupResults(updatedCrypt, key, multipleGroupsFound, groupFound, foundGroup, entry);
+
         }
 
         crypt.clear();
         crypt.putAll(updatedCrypt);
     }
 
-    private static boolean checkGroup(String imagefolder, String key, int group, boolean isExactKey) {
-        String pathString = imagefolder + File.separator + (isExactKey ? key : key + "g" + group) + ".jpg";
+    private static boolean checkGroup(String imagefolder, String cardName, int group, boolean isExactKey) {
+        String groupSuffix = "g" + group;
+
+        String adjustedCardName;
+        if (isExactKey) {
+            adjustedCardName = cardName;
+        } else {
+            if (cardName.endsWith("adv")) {
+                adjustedCardName = cardName.substring(0, cardName.length() - 3) + groupSuffix + "adv";
+            } else {
+                adjustedCardName = cardName + groupSuffix;
+            }
+        }
+
+        String pathString = imagefolder + File.separator + adjustedCardName + ".jpg";
         Path path = Paths.get(pathString);
         log.debug("Checking path: {}", path);
 
         if (Files.exists(path)) {
-            log.debug("Crypt found for card {} in group {}", key, group);
+            log.debug("File found for crypt card {} in group {}", adjustedCardName, group);
             return true;
+        } else {
+            log.error("No File found for crypt card {}!", adjustedCardName);
         }
         return false;
     }
 
-    private static void handleGroupResults(Map<String, Integer> updatedCrypt, String key, boolean multipleGroupsFound, boolean groupFound, int foundGroup, Map.Entry<String, Integer> entry) {
+    private static void handleGroupResults(Map<String, Integer> updatedCrypt, String key, boolean multipleGroupsFound, boolean groupFound, Integer foundGroup, int qty) {
         if (multipleGroupsFound) {
             log.error("Multiple groups found for card {}", key);
             throw new RuntimeException("Multiple groups found for card " + key);
         } else if (groupFound) {
-            String newKey = key + "g" + foundGroup;
+            String newKey = key + (foundGroup != null ? "g" + foundGroup : "");
             log.info("Only one group found. Updating key from {} to {}", key, newKey);
-            updatedCrypt.put(newKey, entry.getValue());
+            updatedCrypt.put(newKey, qty);
             updatedCrypt.remove(key);
         } else {
             log.warn("No group found for card {}", key);
@@ -165,7 +202,7 @@ public class Main {
         if (cardName == null) {
             return null;
         }
-        return cardName.replaceAll("[()\\s]", "").toLowerCase();
+        return cardName.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
     }
 
     private static List<File> getImageFiles(Map<String, Integer> crypt, String imagefolder) {
