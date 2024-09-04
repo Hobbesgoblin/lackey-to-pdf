@@ -41,7 +41,7 @@ application {
 }
 
 tasks.shadowJar {
-    archiveFileName.set("${project.name}-${project.version}-executable.jar")
+    archiveFileName.set("${project.name}-${project.version}-bundled.jar")
     manifest {
         attributes["Main-Class"] = "net.vekn.Main"
     }
